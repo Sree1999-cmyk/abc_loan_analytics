@@ -99,8 +99,8 @@ if st.button("Predict Loan Outcome", use_container_width=True):
     }
     
     df_c = pd.DataFrame(row)[cls_cols]
-    pred_status = clf.predict(sc_cls.transform(df_c))[0]
-    prob = clf.predict_proba(sc_cls.transform(df_c))[0][1]
+    # In credit risk data: class 0 = Safe/Low Risk (Approve), class 1 = Default Risk (Reject)
+    safe_prob = clf.predict_proba(sc_cls.transform(df_c))[0][0]
 
     df_r = pd.DataFrame(row).drop(['loan_amnt'], axis=1)[reg_cols]
     pred_amt = max(500.0, reg.predict(sc_reg.transform(df_r))[0])
@@ -108,10 +108,12 @@ if st.button("Predict Loan Outcome", use_container_width=True):
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("Logistic Regression")
-        if pred_status == 1:
-            st.success(f"APPROVED (Probability: {prob*100:.1f}%)")
+        if default == "Yes":
+            st.error("REJECTED (Reason: Prior Loan Default on File)")
+        elif safe_prob >= 0.50:
+            st.success(f"APPROVED - Low Risk (Confidence: {safe_prob*100:.1f}%)")
         else:
-            st.error(f"REJECTED (Approval Prob: {prob*100:.1f}%)")
+            st.error(f"REJECTED - High Default Risk (Approval Prob: {safe_prob*100:.1f}%)")
     with c2:
         st.subheader("Linear Regression")
         st.metric("Sanctioned Loan Amount", f"${pred_amt:,.2f}")
